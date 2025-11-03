@@ -40,6 +40,36 @@ router.post("/add-staff", authMiddleware(["admin"]), async(req, res) => {
     }
 })
 
+router.put("/staff/:id", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    let updateData = { name, email };
+
+    // If password was changed, hash it
+    if (password && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      updateData.password = hashedPassword;
+    }
+
+    const updatedStaff = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedStaff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    res.json({ message: "Staff updated successfully", updatedStaff });
+    
+  } catch (error) {
+    res.status(500).json({ message: "Error updating staff", error: error.message });
+  }
+});
+
 router.delete("/staffs/:id", authMiddleware(["admin"]), async(req, res) => {
     try {
         await User.findByIdAndDelete(req.params.id);
